@@ -114,7 +114,8 @@
         "INPUT",
         "SELECT",
         "TEXTAREA",
-        "X-MS-WEBVIEW"
+        "X-MS-WEBVIEW",
+        "NAMI-BUTTON",
     ];
     var FocusableSelectors = [];
 
@@ -194,6 +195,7 @@
     };
     // Privates
     var _lastTarget;
+    var _lastDocumentTarget;
     var _cachedLastTargetRect;
     var _historyRect;
     /**
@@ -206,9 +208,10 @@
     function _xyFocus(direction, keyCode, referenceRect, dontExit) {
         // If focus has moved since the last XYFocus movement, scrolling occured, or an explicit
         // reference rectangle was given to us, then we invalidate the history rectangle.
-        if (referenceRect || document.activeElement !== _lastTarget) {
+        if (referenceRect || document.activeElement !== _lastDocumentTarget) {
             _historyRect = null;
             _lastTarget = null;
+            _lastDocumentTarget = null;
             _cachedLastTargetRect = null;
         }
         else if (_lastTarget && _cachedLastTargetRect) {
@@ -229,8 +232,15 @@
         if (result && _trySetFocus(result.target, keyCode)) {
             // A focus target was found
             updateHistoryRect(direction, result);
-            _lastTarget = result.target;
+            _lastTarget = _lastDocumentTarget = result.target;
             _cachedLastTargetRect = result.targetRect;
+            if (
+              document.activeElement
+              && document.activeElement !== _lastTarget
+              && document.activeElement.shadowRoot
+            ) {
+              _lastDocumentTarget = document.activeElement;
+            }
             if (result.target.tagName === "IFRAME") {
                 var targetIframe = result.target;
                 if (IFrameHelper.isXYFocusEnabled(targetIframe)) {
@@ -332,7 +342,10 @@
         options = options || {};
         options.focusRoot = options.focusRoot || _focusRoot || document.body;
         options.historyRect = options.historyRect || _defaultRect();
-        var maxDistance = Math.max(window.screen.availHeight, window.screen.availWidth);
+
+        // window.screen.avail{Height,Width} was being calculated incorrectly in some cases.
+        var maxDistance = Math.max(document.body.clientHeight, document.body.clientWidth);
+        // var maxDistance = Math.max(window.screen.availHeight, window.screen.availWidth);
         var refObj = getReferenceObject(options.referenceElement, options.referenceRect);
         // Handle override
         var refElement = refObj.element;
@@ -361,10 +374,10 @@
             rect: null,
             score: 0
         };
-        var allElements = options.focusRoot.querySelectorAll("*");
+        var allElements = _getAllFocusableElements(options.focusRoot);
         for (var i = 0, length = allElements.length; i < length; i++) {
             var potentialElement = allElements[i];
-            if (refObj.element === potentialElement || !_isFocusable(potentialElement)) {
+            if (refObj.element === potentialElement) {
                 continue;
             }
             var potentialRect = _toIRect(potentialElement.getBoundingClientRect());
@@ -528,6 +541,7 @@
         var canceled = eventSrc.dispatchEvent(EventNames.focusChanging, { nextFocusElement: element, keyCode: keyCode });
         if (!canceled) {
             element.focus();
+            return true;
         }
         return document.activeElement === element;
     }
@@ -568,6 +582,28 @@
         }
         return true;
     };
+    function _getAllFocusableElements(root) {
+        var elements = [];
+        function traverse(node) {
+            // Check if the node itself is focusable
+            if (_isFocusable(node)) {
+                elements.push(node);
+            }
+            // Check children
+            var children = node.children;
+            for (var i = 0; i < children.length; i++) {
+                traverse(children[i]);
+            }
+            // Check shadow DOM
+            if (node.shadowRoot) {
+                for (var i = 0; i < node.shadowRoot.children.length; i++) {
+                    traverse(node.shadowRoot.children[i]);
+                }
+            }
+        }
+        traverse(root);
+        return elements;
+    }
     function _matchesSelector(element, selectorString) {
         var matchesSelector = element.matches
                 || element.msMatchesSelector
@@ -605,7 +641,11 @@
             return;
         }
         if (_keyCodeMap.accept.indexOf(e.keyCode) !== -1) {
-            e.srcElement.click();
+            if (e.srcElement == _lastDocumentTarget) {
+                _lastTarget.click();
+            } else {
+                e.srcElement.click();
+            }
         }
     };
 
@@ -720,6 +760,7 @@
         204, // GamepadDPadDown
         139); // NavigationDown
     _keyCodeMap.accept.push(
+        13, // RemoteAccept
         142, // NavigationAccept
         195); // GamepadA
     window.addEventListener("message", function (e) {
