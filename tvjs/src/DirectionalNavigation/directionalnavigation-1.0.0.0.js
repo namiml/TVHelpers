@@ -496,7 +496,6 @@ export const directionalNavigation = (function () {
                 // If no valid reference is supplied, we'll use document.activeElement unless it's the body
                 if (document.activeElement !== document.body) {
                     referenceElement = document.activeElement;
-                    referenceElement.blur();
                 }
             }
             if (referenceElement) {
