@@ -643,7 +643,6 @@ export const directionalNavigation = (function () {
             return;
         }
         if (_keyCodeMap.accept.indexOf(e.keyCode) !== -1) {
-            console.log('click!', e.srcElement, _lastDocumentTarget)
             if (e.srcElement == _lastDocumentTarget) {
                 _lastTarget.click();
             } else {
@@ -889,7 +888,6 @@ export const directionalNavigation = (function () {
 
     var EventMixinEvent = (function () {
         function EventMixinEvent(type, detail, target) {
-            console.log('in event mixin event')
             this.detail = detail;
             this.target = target;
             this.timeStamp = Date.now();
