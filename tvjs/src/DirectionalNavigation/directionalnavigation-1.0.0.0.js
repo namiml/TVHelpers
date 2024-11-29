@@ -1,4 +1,4 @@
-﻿// #      The MIT License (MIT)
+// #      The MIT License (MIT)
 // #
 // #      Copyright (c) 2016 Microsoft. All rights reserved.
 // #
@@ -87,8 +87,12 @@
 // the primary axis trumps the history score, however, you'd need 10,000s of pixels of consecutive
 // buttons which is unrealistic as a focus movement likely will trigger a scroll which invalidates history.
 
-(function () {
+export const directionalNavigation = (function () {
     "use strict";
+
+    if(typeof window == "undefined"){
+      return;
+    }
 
     var CrossDomainMessageConstants = {
         messageDataProperty: "msWinJSXYFocusControlMessage",
@@ -342,8 +346,6 @@
         options = options || {};
         options.focusRoot = options.focusRoot || _focusRoot || document.body;
         options.historyRect = options.historyRect || _defaultRect();
-
-        // window.screen.avail{Height,Width} was being calculated incorrectly in some cases.
         var maxDistance = Math.max(document.body.clientHeight, document.body.clientWidth);
         // var maxDistance = Math.max(window.screen.availHeight, window.screen.availWidth);
         var refObj = getReferenceObject(options.referenceElement, options.referenceRect);
@@ -494,6 +496,7 @@
                 // If no valid reference is supplied, we'll use document.activeElement unless it's the body
                 if (document.activeElement !== document.body) {
                     referenceElement = document.activeElement;
+                    referenceElement.blur();
                 }
             }
             if (referenceElement) {
@@ -641,6 +644,7 @@
             return;
         }
         if (_keyCodeMap.accept.indexOf(e.keyCode) !== -1) {
+            console.log('click!', e.srcElement, _lastDocumentTarget)
             if (e.srcElement == _lastDocumentTarget) {
                 _lastTarget.click();
             } else {
@@ -886,6 +890,7 @@
 
     var EventMixinEvent = (function () {
         function EventMixinEvent(type, detail, target) {
+            console.log('in event mixin event')
             this.detail = detail;
             this.target = target;
             this.timeStamp = Date.now();
