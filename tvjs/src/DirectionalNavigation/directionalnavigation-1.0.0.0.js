@@ -1,4 +1,4 @@
-﻿// #      The MIT License (MIT)
+// #      The MIT License (MIT)
 // #
 // #      Copyright (c) 2016 Microsoft. All rights reserved.
 // #
@@ -87,8 +87,12 @@
 // the primary axis trumps the history score, however, you'd need 10,000s of pixels of consecutive
 // buttons which is unrealistic as a focus movement likely will trigger a scroll which invalidates history.
 
-(function () {
+export const directionalNavigation = (function () {
     "use strict";
+
+    if(typeof window == "undefined"){
+      return;
+    }
 
     var CrossDomainMessageConstants = {
         messageDataProperty: "msWinJSXYFocusControlMessage",
@@ -342,8 +346,6 @@
         options = options || {};
         options.focusRoot = options.focusRoot || _focusRoot || document.body;
         options.historyRect = options.historyRect || _defaultRect();
-
-        // window.screen.avail{Height,Width} was being calculated incorrectly in some cases.
         var maxDistance = Math.max(document.body.clientHeight, document.body.clientWidth);
         // var maxDistance = Math.max(window.screen.availHeight, window.screen.availWidth);
         var refObj = getReferenceObject(options.referenceElement, options.referenceRect);
