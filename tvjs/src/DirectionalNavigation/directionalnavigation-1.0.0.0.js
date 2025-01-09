@@ -120,14 +120,17 @@ export const directionalNavigation = (function () {
         "TEXTAREA",
         "X-MS-WEBVIEW",
         "NAMI-BUTTON",
+        "NAMI-PLAY-PAUSE-BUTTON",
+        "NAMI-SEGMENT-PICKER-ITEM",
+        "NAMI-VOLUME-BUTTON",
     ];
     var FocusableSelectors = [];
 
     // These factors can be tweaked to adjust which elements are favored by the focus algorithm
     var ScoringConstants = {
-        primaryAxisDistanceWeight: 30,
-        secondaryAxisDistanceWeight: 20,
-        percentInHistoryShadowWeight: 100000
+        primaryAxisDistanceWeight: 50,
+        secondaryAxisDistanceWeight: 30,
+        percentInHistoryShadowWeight: 20000,
     };
 
     /**
@@ -138,7 +141,8 @@ export const directionalNavigation = (function () {
         right: [],
         up: [],
         down: [],
-        accept: []
+        accept: [],
+        acceptNAMI: [],
     };
 
     var _enabled = true;
@@ -613,6 +617,7 @@ export const directionalNavigation = (function () {
                 || element.webkitMatchesSelector;
         return matchesSelector.call(element, selectorString);
     };
+    var isFirstEvent = true;
     function _handleKeyDownEvent(e) {
         if (e.defaultPrevented) {
             return;
@@ -632,6 +637,11 @@ export const directionalNavigation = (function () {
             direction = "right";
         }
         if (direction && _enabled) {
+            if ( isFirstEvent && document.activeElement && document.activeElement !== document.body ) {
+                document.activeElement.blur();
+                isFirstEvent = false;
+            }
+
             var shouldPreventDefault = _xyFocus(direction, keyCode);
             if (shouldPreventDefault) {
                 e.preventDefault();
@@ -871,6 +881,7 @@ export const directionalNavigation = (function () {
         // Subscribe on bubble phase to allow developers to override XYFocus behaviors for directional keys.
         document.addEventListener("keydown", _handleKeyDownEvent);
         document.addEventListener("keyup", _handleKeyUpEvent);
+        document.addEventListener("page-changed", () => isFirstEvent = true);
         // If we are running within an iframe, we send a registration message to the parent window
         if (window.top !== window.window) {
             var message = {};
