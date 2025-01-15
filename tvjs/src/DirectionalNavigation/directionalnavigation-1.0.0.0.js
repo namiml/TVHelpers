@@ -872,16 +872,18 @@ export const directionalNavigation = (function () {
         }
     });
 
+    // Subscribe on bubble phase to allow developers to override XYFocus behaviors for directional keys.
+    document.addEventListener("keydown", _handleKeyDownEvent);
+    document.addEventListener("keyup", _handleKeyUpEvent);
+    document.addEventListener("page-changed", () => {console.log("page-changed"); isFirstEvent = true});
+
     var _initRun = false;
     var _init = function () {
         if (_initRun) {
             return;
         }
         _initRun = true;
-        // Subscribe on bubble phase to allow developers to override XYFocus behaviors for directional keys.
-        document.addEventListener("keydown", _handleKeyDownEvent);
-        document.addEventListener("keyup", _handleKeyUpEvent);
-        document.addEventListener("page-changed", () => isFirstEvent = true);
+      
         // If we are running within an iframe, we send a registration message to the parent window
         if (window.top !== window.window) {
             var message = {};
