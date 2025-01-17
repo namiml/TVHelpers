@@ -213,7 +213,7 @@ export const directionalNavigation = (function () {
         * @param referenceRect (optional) A rectangle to use as the source coordinates for finding the next focusable element.
         * @param dontExit (optional) Indicates whether this focus request is allowed to propagate to its parent if we are in iframe.
     **/
-    function _xyFocus(direction, keyCode, initialEvent, referenceRect, dontExit) {
+    function _xyFocus(direction, keyCode, referenceRect, dontExit) {
         // If focus has moved since the last XYFocus movement, scrolling occured, or an explicit
         // reference rectangle was given to us, then we invalidate the history rectangle.
         if (referenceRect || document.activeElement !== _lastDocumentTarget) {
@@ -231,7 +231,7 @@ export const directionalNavigation = (function () {
         }
         var activeElement = document.activeElement;
         var lastTarget = _lastTarget;
-        var result = _findNextFocusElementInternal(direction, initialEvent, {
+        var result = _findNextFocusElementInternal(direction, {
             focusRoot: _focusRoot,
             historyRect: _historyRect,
             referenceElement: _lastTarget,
@@ -346,7 +346,7 @@ export const directionalNavigation = (function () {
             _historyRect = newHistoryRect;
         }
     }
-    function _findNextFocusElementInternal(direction, initialEvent, options) {
+    function _findNextFocusElementInternal(direction, options) {
         options = options || {};
         options.focusRoot = options.focusRoot || _focusRoot || document.body;
         options.historyRect = options.historyRect || _defaultRect();
@@ -419,11 +419,11 @@ export const directionalNavigation = (function () {
             switch (direction) {
                 case DirectionNames.left:
                     // Make sure we don't evaluate any potential elements to the right of the reference element
-                    if (!initialEvent && potentialRect.left >= referenceRect.left) {
+                    if (potentialRect.left >= referenceRect.left) {
                         break;
                     }
                     percentInShadow = calculatePercentInShadow(referenceRect.top, referenceRect.bottom, potentialRect.top, potentialRect.bottom);
-                    primaryAxisDistance = !initialEvent ? referenceRect.left - potentialRect.right : potentialRect.left - referenceRect.right ;
+                    primaryAxisDistance = referenceRect.left - potentialRect.right;
                     if (percentInShadow > 0) {
                         percentInHistoryShadow = calculatePercentInShadow(historyRect.top, historyRect.bottom, potentialRect.top, potentialRect.bottom);
                     }
@@ -618,6 +618,15 @@ export const directionalNavigation = (function () {
         return matchesSelector.call(element, selectorString);
     };
     var isFirstEvent = true;
+    function getActiveElement(root = document) {
+      const activeEl = root.activeElement;
+      if(!activeEl) return root.host;
+      if (activeEl.shadowRoot) {
+        return getActiveElement(activeEl.shadowRoot);
+      } else {
+        return activeEl;
+      }
+    }
     function _handleKeyDownEvent(e) {
         if (e.defaultPrevented) {
             return;
@@ -637,13 +646,14 @@ export const directionalNavigation = (function () {
             direction = "right";
         }
         if (direction && _enabled) {
-            const initialEvent = isFirstEvent;
             if (isFirstEvent && document.activeElement) {
+                _lastTarget = getActiveElement();
                 document.activeElement.blur();
+                _lastDocumentTarget = document.activeElement
                 isFirstEvent = false;
             }
 
-            var shouldPreventDefault = _xyFocus(direction, keyCode, initialEvent);
+            var shouldPreventDefault = _xyFocus(direction, keyCode);
             if (shouldPreventDefault) {
                 e.preventDefault();
             }
