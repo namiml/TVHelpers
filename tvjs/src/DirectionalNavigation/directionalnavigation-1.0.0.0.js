@@ -618,6 +618,15 @@ export const directionalNavigation = (function () {
         return matchesSelector.call(element, selectorString);
     };
     var isFirstEvent = true;
+    function getActiveElement(root = document) {
+      const activeEl = root.activeElement;
+      if(!activeEl) return root.host;
+      if (activeEl.shadowRoot) {
+        return getActiveElement(activeEl.shadowRoot);
+      } else {
+        return activeEl;
+      }
+    }
     function _handleKeyDownEvent(e) {
         if (e.defaultPrevented) {
             return;
@@ -637,8 +646,10 @@ export const directionalNavigation = (function () {
             direction = "right";
         }
         if (direction && _enabled) {
-            if ( isFirstEvent && document.activeElement && document.activeElement !== document.body ) {
+            if (isFirstEvent && document.activeElement) {
+                _lastTarget = getActiveElement();
                 document.activeElement.blur();
+                _lastDocumentTarget = document.activeElement
                 isFirstEvent = false;
             }
 
